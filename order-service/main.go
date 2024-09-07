@@ -1,22 +1,39 @@
-// order-service/main.go
 package main
 
 import (
+	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 )
 
+var producer sarama.SyncProducer
+
 func main() {
+	var err error
+	config := sarama.NewConfig()
+	config.Producer.Return.Successes = true
+	producer, err = sarama.NewSyncProducer([]string{"kafka:9092"}, config)
+	if err != nil {
+		log.Fatalf("Failed to start Kafka producer: %v", err)
+	}
+	defer producer.Close()
+
 	router := gin.Default()
 
 	router.POST("/create", func(c *gin.Context) {
-		// Buyurtma yaratish logikasi
-		c.JSON(http.StatusOK, gin.H{"message": "Order created successfully"})
+		message := "Order created successfully"
+		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+			Topic: "order-topic",
+			Value: sarama.StringEncoder(message),
+		})
+		if err != nil {
+			log.Printf("Failed to send message to Kafka: %v", err)
+		}
+		c.JSON(http.StatusOK, gin.H{"message": message})
 	})
 
 	router.GET("/list", func(c *gin.Context) {
-		// Buyurtmalar ro'yxatini olish logikasi
 		c.JSON(http.StatusOK, gin.H{"message": "Order list retrieved successfully"})
 	})
 
