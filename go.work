@@ -1,0 +1,8 @@
+go 1.22.6
+
+use (
+	./api-gateway
+	./event-service
+	./order-service
+	./user-service
+)
